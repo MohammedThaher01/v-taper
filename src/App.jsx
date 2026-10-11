@@ -86,15 +86,23 @@ export default function App() {
   const todaysWorkout = WORKOUT_SPLIT[dayOfWeek];
 
   const fetchNutrition = async () => {
-    const res = await axios.get(`${API_BASE}/nutrition/today`);
-    setNutritionData(res.data);
-    const weeklyRes = await axios.get(`${API_BASE}/nutrition/weekly`);
-    setWeeklyData(weeklyRes.data);
+    try {
+      const res = await axios.get(`${API_BASE}/nutrition/today`);
+      setNutritionData(res.data);
+      const weeklyRes = await axios.get(`${API_BASE}/nutrition/weekly`);
+      setWeeklyData(weeklyRes.data);
+    } catch (e) {
+      console.error('fetchNutrition failed:', e.response?.data || e.message);
+    }
   };
 
   const fetchWorkouts = async () => {
-    const res = await axios.get(`${API_BASE}/workout/monthly`);
-    setMonthlyWorkouts(res.data);
+    try {
+      const res = await axios.get(`${API_BASE}/workout/monthly`);
+      setMonthlyWorkouts(res.data);
+    } catch (e) {
+      console.error('fetchWorkouts failed:', e.response?.data || e.message);
+    }
   };
 
   useEffect(() => {
