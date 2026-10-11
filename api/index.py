@@ -2,6 +2,7 @@ import os
 import json
 from datetime import date, datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException, Depends
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date, Boolean
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
@@ -37,9 +38,11 @@ if not database_url.startswith("sqlite") and "sslmode" not in database_url:
     database_url = f"{database_url}{sep}sslmode=require"
 
 is_sqlite = database_url.startswith("sqlite")
-engine_kwargs = {"poolclass": NullPool}
+engine_kwargs = {"poolclass": NullPool, "connect_args": {}}
 if is_sqlite:
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
+    engine_kwargs["connect_args"]["check_same_thread"] = False
+else:
+    engine_kwargs["connect_args"]["connect_timeout"] = 10
 
 engine = create_engine(database_url, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -63,7 +66,16 @@ class WorkoutLog(Base):
     weight_kg = Column(Float)
     completed = Column(Boolean, default=False)
 
-Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Database tables ready.")
+    except Exception as e:
+        print(f"WARNING: DB table creation failed: {e}")
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 def nutrition_to_dict(log: NutritionLog):
     return {
@@ -100,8 +112,6 @@ def extract_items(parsed):
             if isinstance(parsed.get(key), list):
                 return parsed[key]
     raise ValueError("Unexpected AI JSON shape")
-
-app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
