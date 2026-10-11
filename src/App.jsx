@@ -110,7 +110,8 @@ export default function App() {
       setMealInput('');
       await fetchNutrition();
     } catch (error) {
-      alert('Failed to parse meal. Add a valid GROQ_API_KEY and try again.');
+      const detail = error.response?.data?.detail || error.message || 'Unknown error';
+      alert(`Failed to parse meal.\n\n${detail}`);
     } finally {
       setLoadingMeal(false);
     }

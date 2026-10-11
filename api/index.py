@@ -144,8 +144,8 @@ Do NOT calculate the totals. Only provide the base nutritional values.
         )
         raw_text = completion.choices[0].message.content.replace("```json", "").replace("```", "").strip()
         parsed_data = extract_items(json.loads(raw_text))
-    except Exception:
-        raise HTTPException(status_code=400, detail="Failed to parse AI response.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Groq error: {type(e).__name__}: {str(e)}")
 
     saved_logs = []
     for item in parsed_data:
